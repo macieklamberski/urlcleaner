@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["bun"]
+  },
+  "include": ["src"]
+}
