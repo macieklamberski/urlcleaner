@@ -21,20 +21,9 @@ const parseUrl = (url: string): URL | undefined => {
   } catch {}
 }
 
-// Apply unwrappers in order and return the first extracted target URL.
-export const unwrapUrl = (url: URL, unwrappers: Array<UrlUnwrapper>): string | undefined => {
-  for (const unwrap of unwrappers) {
-    const target = unwrap(url)
-
-    if (target) {
-      return target
-    }
-  }
-}
-
 // Delete tracking parameters in place, matching names case-insensitively.
 // Returns whether anything was removed.
-export const stripTrackingParams = (url: URL, trackingParams: Array<string>): boolean => {
+const deleteTrackingParams = (url: URL, trackingParams: Array<string>): boolean => {
   const trackingSet = getTrackingParamsSet(trackingParams)
   const keysToDelete: Array<string> = []
 
@@ -49,6 +38,51 @@ export const stripTrackingParams = (url: URL, trackingParams: Array<string>): bo
   }
 
   return keysToDelete.length > 0
+}
+
+const applyUnwrappers = (url: URL, unwrappers: Array<UrlUnwrapper>): string | undefined => {
+  for (const unwrap of unwrappers) {
+    const target = unwrap(url)
+
+    if (target) {
+      return target
+    }
+  }
+}
+
+// Apply unwrappers in order and return the first extracted target URL, or
+// undefined when none match or the input cannot be parsed.
+export const unwrapUrl = (
+  url: string,
+  unwrappers: Array<UrlUnwrapper> = defaultUnwrappers,
+): string | undefined => {
+  const parsed = parseUrl(url)
+
+  if (!parsed) {
+    return
+  }
+
+  return applyUnwrappers(parsed, unwrappers)
+}
+
+// Remove tracking parameters, matching names case-insensitively, and return
+// the cleaned URL string. The input is returned unchanged when nothing
+// matches or it cannot be parsed.
+export const stripTrackingParams = (
+  url: string,
+  trackingParams: Array<string> = defaultTrackingParams,
+): string => {
+  const parsed = parseUrl(url)
+
+  if (!parsed) {
+    return url
+  }
+
+  if (deleteTrackingParams(parsed, trackingParams)) {
+    return parsed.toString()
+  }
+
+  return url
 }
 
 // Unwrap redirect/affiliate wrappers, then strip tracking parameters. When
@@ -71,7 +105,7 @@ export const cleanUrl = (url: string, options?: CleanUrlOptions): string => {
   // Wrappers can nest (an email gateway wrapping a search redirect), so
   // unwrap repeatedly up to the depth limit.
   for (let depth = 0; depth < maxUnwrapDepth; depth += 1) {
-    const target = unwrapUrl(currentParsed, unwrappers)
+    const target = applyUnwrappers(currentParsed, unwrappers)
 
     if (!target) {
       break
@@ -87,7 +121,7 @@ export const cleanUrl = (url: string, options?: CleanUrlOptions): string => {
     currentParsed = targetParsed
   }
 
-  if (stripTrackingParams(currentParsed, trackingParams)) {
+  if (deleteTrackingParams(currentParsed, trackingParams)) {
     return currentParsed.toString()
   }
 

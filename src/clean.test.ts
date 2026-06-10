@@ -7,131 +7,214 @@ const exampleUnwrapper = createParamExtractor({
   params: ['target'],
 })
 
+const exampleFallbackUnwrapper = createParamExtractor({
+  hosts: 'redirect.example.com',
+  params: ['fallback'],
+})
+
 const nestedUnwrapper = createParamExtractor({
   hosts: 'outer.example.com',
   params: ['url'],
 })
 
 describe('unwrapUrl', () => {
-  it('should return the first matching unwrapper result', () => {
-    const url = new URL('https://redirect.example.com/?target=https%3A%2F%2Fexample.com%2Fpost')
+  it('should return the target from the matching unwrapper', () => {
+    const value = 'https://redirect.example.com/?target=https%3A%2F%2Fexample.com%2Fpost'
+    const expected = 'https://example.com/post'
 
-    expect(unwrapUrl(url, [nestedUnwrapper, exampleUnwrapper])).toBe('https://example.com/post')
+    expect(unwrapUrl(value, [nestedUnwrapper, exampleUnwrapper])).toBe(expected)
+  })
+
+  it('should return the first match when multiple unwrappers match', () => {
+    const value =
+      'https://redirect.example.com/?target=https%3A%2F%2Fexample.com%2Ffirst&fallback=https%3A%2F%2Fexample.com%2Fsecond'
+    const expected = 'https://example.com/first'
+
+    expect(unwrapUrl(value, [exampleUnwrapper, exampleFallbackUnwrapper])).toBe(expected)
+  })
+
+  it('should unwrap with default unwrappers when none are given', () => {
+    const value = 'https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Fpost'
+    const expected = 'https://example.com/post'
+
+    expect(unwrapUrl(value)).toBe(expected)
   })
 
   it('should return undefined when no unwrapper matches', () => {
-    const url = new URL('https://example.com/post')
+    const value = 'https://example.com/post'
 
-    expect(unwrapUrl(url, [exampleUnwrapper])).toBeUndefined()
+    expect(unwrapUrl(value, [exampleUnwrapper])).toBeUndefined()
   })
 
-  it('should return undefined for empty unwrapper list', () => {
-    const url = new URL('https://redirect.example.com/?target=https%3A%2F%2Fexample.com')
+  it('should return undefined for an empty unwrapper list', () => {
+    const value = 'https://redirect.example.com/?target=https%3A%2F%2Fexample.com'
 
-    expect(unwrapUrl(url, [])).toBeUndefined()
+    expect(unwrapUrl(value, [])).toBeUndefined()
+  })
+
+  it('should return undefined when the input is not a valid URL', () => {
+    expect(unwrapUrl('not a url', [exampleUnwrapper])).toBeUndefined()
   })
 })
 
 describe('stripTrackingParams', () => {
-  it('should delete matching params and report the change', () => {
-    const url = new URL('https://example.com/post?utm_source=feed&id=42')
+  it('should remove matching params', () => {
+    const value = 'https://example.com/post?utm_source=feed&id=42'
+    const expected = 'https://example.com/post?id=42'
 
-    const isChanged = stripTrackingParams(url, ['utm_source'])
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(expected)
+  })
 
-    expect(isChanged).toBe(true)
-    expect(url.toString()).toBe('https://example.com/post?id=42')
+  it('should remove multiple matching params at once', () => {
+    const value = 'https://example.com/post?utm_source=feed&utm_medium=email&id=42'
+    const expected = 'https://example.com/post?id=42'
+
+    expect(stripTrackingParams(value, ['utm_source', 'utm_medium'])).toBe(expected)
+  })
+
+  it('should remove default params when none are given', () => {
+    const value = 'https://example.com/post?utm_source=feed&id=42'
+    const expected = 'https://example.com/post?id=42'
+
+    expect(stripTrackingParams(value)).toBe(expected)
   })
 
   it('should match param names case-insensitively', () => {
-    const url = new URL('https://example.com/post?UTM_Source=feed&id=42')
+    const value = 'https://example.com/post?UTM_Source=feed&id=42'
+    const expected = 'https://example.com/post?id=42'
 
-    const isChanged = stripTrackingParams(url, ['utm_source'])
-
-    expect(isChanged).toBe(true)
-    expect(url.toString()).toBe('https://example.com/post?id=42')
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(expected)
   })
 
-  it('should report no change when nothing matches', () => {
-    const url = new URL('https://example.com/post?id=42')
+  it('should remove the query separator when all params are stripped', () => {
+    const value = 'https://example.com/post?utm_source=feed'
+    const expected = 'https://example.com/post'
 
-    const isChanged = stripTrackingParams(url, ['utm_source'])
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(expected)
+  })
 
-    expect(isChanged).toBe(false)
-    expect(url.toString()).toBe('https://example.com/post?id=42')
+  it('should preserve the fragment', () => {
+    const value = 'https://example.com/post?utm_source=feed#section'
+    const expected = 'https://example.com/post#section'
+
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(expected)
+  })
+
+  it('should return the input unchanged when nothing matches', () => {
+    const value = 'https://example.com/post?id=42'
+
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(value)
+  })
+
+  it('should return the input unchanged for an empty param list', () => {
+    const value = 'https://example.com/post?utm_source=feed'
+
+    expect(stripTrackingParams(value, [])).toBe(value)
+  })
+
+  it('should return the input unchanged when there is no query', () => {
+    const value = 'https://example.com/post'
+
+    expect(stripTrackingParams(value, ['utm_source'])).toBe(value)
+  })
+
+  it('should return the input unchanged when it is not a valid URL', () => {
+    expect(stripTrackingParams('not a url')).toBe('not a url')
   })
 })
 
 describe('cleanUrl', () => {
-  it('should strip default tracking params', () => {
-    const url = 'https://example.com/post?utm_source=feed&utm_medium=email&id=42'
+  it('should unwrap and strip tracking params with defaults', () => {
+    const value =
+      'https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Fpost%3Futm_source%3Dnewsletter'
+    const expected = 'https://example.com/post'
 
-    expect(cleanUrl(url)).toBe('https://example.com/post?id=42')
+    expect(cleanUrl(value)).toBe(expected)
+  })
+
+  it('should strip default tracking params without unwrapping', () => {
+    const value = 'https://example.com/post?utm_source=feed&utm_medium=email&id=42'
+    const expected = 'https://example.com/post?id=42'
+
+    expect(cleanUrl(value)).toBe(expected)
   })
 
   it('should unwrap with custom unwrappers and strip tracking params', () => {
     const target = 'https://example.com/post?utm_source=feed&id=42'
-    const url = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
+    const value = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
+    const options = { unwrappers: [exampleUnwrapper] }
+    const expected = 'https://example.com/post?id=42'
 
-    const cleaned = cleanUrl(url, { unwrappers: [exampleUnwrapper] })
-
-    expect(cleaned).toBe('https://example.com/post?id=42')
+    expect(cleanUrl(value, options)).toBe(expected)
   })
 
   it('should unwrap nested wrappers up to the depth limit', () => {
     const target = 'https://example.com/post'
     const inner = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
-    const url = `https://outer.example.com/?url=${encodeURIComponent(inner)}`
+    const value = `https://outer.example.com/?url=${encodeURIComponent(inner)}`
+    const options = { unwrappers: [exampleUnwrapper, nestedUnwrapper] }
 
-    const cleaned = cleanUrl(url, { unwrappers: [exampleUnwrapper, nestedUnwrapper] })
-
-    expect(cleaned).toBe('https://example.com/post')
+    expect(cleanUrl(value, options)).toBe(target)
   })
 
   it('should stop unwrapping at maxUnwrapDepth', () => {
     const target = 'https://example.com/post'
     const inner = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
-    const url = `https://outer.example.com/?url=${encodeURIComponent(inner)}`
-
-    const cleaned = cleanUrl(url, {
+    const value = `https://outer.example.com/?url=${encodeURIComponent(inner)}`
+    const options = {
       unwrappers: [exampleUnwrapper, nestedUnwrapper],
       maxUnwrapDepth: 1,
-    })
+    }
 
-    expect(cleaned).toBe(inner)
+    expect(cleanUrl(value, options)).toBe(inner)
+  })
+
+  it('should not unwrap when maxUnwrapDepth is zero', () => {
+    const target = 'https://example.com/post'
+    const value = `https://redirect.example.com/?target=${encodeURIComponent(target)}&utm_source=feed`
+    const options = {
+      unwrappers: [exampleUnwrapper],
+      maxUnwrapDepth: 0,
+    }
+    const expected = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
+
+    expect(cleanUrl(value, options)).toBe(expected)
   })
 
   it('should return the unwrapped target as-is when nothing is stripped', () => {
     const target = 'https://example.com/post'
-    const url = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
+    const value = `https://redirect.example.com/?target=${encodeURIComponent(target)}`
+    const options = { unwrappers: [exampleUnwrapper] }
 
-    const cleaned = cleanUrl(url, { unwrappers: [exampleUnwrapper] })
-
-    expect(cleaned).toBe(target)
+    expect(cleanUrl(value, options)).toBe(target)
   })
 
   it('should respect a custom tracking param list', () => {
-    const url = 'https://example.com/post?session=abc&utm_source=feed'
+    const value = 'https://example.com/post?session=abc&utm_source=feed'
+    const options = { trackingParams: ['session'] }
+    const expected = 'https://example.com/post?utm_source=feed'
 
-    const cleaned = cleanUrl(url, { trackingParams: ['session'] })
+    expect(cleanUrl(value, options)).toBe(expected)
+  })
 
-    expect(cleaned).toBe('https://example.com/post?utm_source=feed')
+  it('should keep the wrapper when the unwrapped target is not a valid URL', () => {
+    const value = 'https://redirect.example.com/?target=not-a-url'
+    const options = { unwrappers: [exampleUnwrapper] }
+
+    expect(cleanUrl(value, options)).toBe(value)
+  })
+
+  it('should return the input unchanged when nothing applies', () => {
+    const value = 'https://example.com/post?id=42'
+
+    expect(cleanUrl(value)).toBe(value)
   })
 
   it('should return the input unchanged when it is not a valid URL', () => {
     expect(cleanUrl('not a url')).toBe('not a url')
   })
 
-  it('should return the input unchanged when nothing applies', () => {
-    const url = 'https://example.com/post?id=42'
-
-    expect(cleanUrl(url)).toBe(url)
-  })
-
-  it('should keep the wrapper when the unwrapped target is not a valid URL', () => {
-    const url = 'https://redirect.example.com/?target=not-a-url'
-
-    const cleaned = cleanUrl(url, { unwrappers: [exampleUnwrapper] })
-
-    expect(cleaned).toBe(url)
+  it('should handle empty strings', () => {
+    expect(cleanUrl('')).toBe('')
   })
 })

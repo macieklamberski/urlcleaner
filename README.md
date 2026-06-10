@@ -42,13 +42,13 @@ const cleaned = cleanUrl(url, {
 })
 ```
 
-### `unwrapUrl(url, unwrappers)`
+### `unwrapUrl(url, unwrappers?)`
 
-Applies the unwrappers in order to a `URL` instance and returns the first extracted target as a string, or `undefined` when none match.
+Applies the unwrappers in order (one pass) and returns the first extracted target, or `undefined` when none match or the input cannot be parsed.
 
-### `stripTrackingParams(url, trackingParams)`
+### `stripTrackingParams(url, trackingParams?)`
 
-Deletes matching query parameters from a `URL` instance in place and returns whether anything was removed.
+Removes matching query parameters and returns the cleaned URL. The input is returned unchanged when nothing matches or it cannot be parsed.
 
 ### `createParamExtractor(config)`
 
