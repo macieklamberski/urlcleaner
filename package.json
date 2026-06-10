@@ -26,10 +26,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./defaults": {
-      "types": "./dist/defaults.d.ts",
-      "default": "./dist/defaults.js"
     }
   },
   "files": [
@@ -37,7 +33,7 @@
   ],
   "scripts": {
     "prepare": "lefthook install",
-    "build": "tsdown src/index.ts src/defaults.ts --format esm --dts --clean --unbundle --no-fixed-extension",
+    "build": "tsdown src/index.ts --format esm --dts --clean --unbundle --no-fixed-extension",
     "test": "bun test"
   },
   "devDependencies": {

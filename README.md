@@ -69,7 +69,7 @@ For wrappers that encode the target (base64 path segments, custom escaping), wri
 
 ### Defaults
 
-`defaultTrackingParams` and `defaultUnwrappers` are exported from the package root and from the lighter `urlcleaner/defaults` subpath. `defaultUnwrappers` enables a conservative subset of the catalog (search-engine redirects and social-platform shims); everything else is exported individually for explicit opt-in.
+`defaultTrackingParams` and `defaultUnwrappers` are exported from the package root. `defaultUnwrappers` enables a conservative subset of the catalog (search-engine redirects and social-platform shims); everything else is exported individually for explicit opt-in.
 
 ## Unwrappers
 
