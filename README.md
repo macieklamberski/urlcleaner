@@ -1,23 +1,23 @@
-# urlcleaner
+# urlpurify
 
-[![codecov](https://codecov.io/gh/macieklamberski/urlcleaner/branch/main/graph/badge.svg)](https://codecov.io/gh/macieklamberski/urlcleaner)
-[![npm version](https://img.shields.io/npm/v/urlcleaner.svg)](https://www.npmjs.com/package/urlcleaner)
-[![license](https://img.shields.io/npm/l/urlcleaner.svg)](https://github.com/macieklamberski/urlcleaner/blob/main/LICENSE)
+[![codecov](https://codecov.io/gh/macieklamberski/urlpurify/branch/main/graph/badge.svg)](https://codecov.io/gh/macieklamberski/urlpurify)
+[![npm version](https://img.shields.io/npm/v/urlpurify.svg)](https://www.npmjs.com/package/urlpurify)
+[![license](https://img.shields.io/npm/l/urlpurify.svg)](https://github.com/macieklamberski/urlpurify/blob/main/LICENSE)
 
 Unwrap redirect, affiliate, and tracking wrapper URLs and strip tracking parameters. Turn noisy links into clean, direct URLs.
 
-URLs collected from feeds, emails, and social platforms rarely point straight at their destination: they pass through search-engine redirects, email security gateways, affiliate networks, and AMP caches, and carry analytics parameters that bloat the link and leak data. urlcleaner ships 70+ unwrappers for known wrapper services and a list of 150+ known tracking parameters, plus a composite `cleanUrl()` that applies both. It has zero dependencies and runs in any modern JavaScript runtime, including browsers.
+URLs collected from feeds, emails, and social platforms rarely point straight at their destination: they pass through search-engine redirects, email security gateways, affiliate networks, and AMP caches, and carry analytics parameters that bloat the link and leak data. urlpurify ships 70+ unwrappers for known wrapper services and a list of 150+ known tracking parameters, plus a composite `cleanUrl()` that applies both. It has zero dependencies and runs in any modern JavaScript runtime, including browsers.
 
 ## Installation
 
 ```bash
-npm install urlcleaner
+npm install urlpurify
 ```
 
 ## Quick Start
 
 ```typescript
-import { cleanUrl } from 'urlcleaner'
+import { cleanUrl } from 'urlpurify'
 
 cleanUrl('https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Fpost%3Futm_source%3Dnewsletter')
 // => 'https://example.com/post'
@@ -30,7 +30,7 @@ cleanUrl('https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Fpost%3Futm_so
 Unwraps redirect wrappers (repeatedly, since wrappers can nest), then strips tracking parameters. When the input cannot be parsed as a URL or nothing applies, the input string is returned unchanged, so the result is always safe to display.
 
 ```typescript
-import { cleanUrl, defaultUnwrappers, unwrapWebArchive } from 'urlcleaner'
+import { cleanUrl, defaultUnwrappers, unwrapWebArchive } from 'urlpurify'
 
 const cleaned = cleanUrl(url, {
   // Unwrappers to apply, first match wins per pass (omit to use defaults).
@@ -55,7 +55,7 @@ Removes matching query parameters and returns the cleaned URL. The input is retu
 Builds an unwrapper for the common case where the target URL sits in a query parameter:
 
 ```typescript
-import { cleanUrl, createParamExtractor, defaultUnwrappers } from 'urlcleaner'
+import { cleanUrl, createParamExtractor, defaultUnwrappers } from 'urlpurify'
 
 const unwrapExample = createParamExtractor({
   hosts: 'go.example.com', // Also accepts an array of hosts or a regex.
